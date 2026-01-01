@@ -2,8 +2,8 @@ name: FirstLight Daily Digest
 
 on:
   # Schedule - runs every day at 7:00 AM EST (12:00 PM UTC)
-schedule:
-  - cron: '*/15 * * * *'
+  schedule:
+    - cron: '*/15 * * * *'
   
   # Allows manual trigger from GitHub Actions tab
   workflow_dispatch:
