@@ -37,5 +37,5 @@ jobs:
           SENDER_PASSWORD: ${{ secrets.SENDER_PASSWORD }}
         run: |
           echo "🚀 Starting FirstLight..."
-          python main.py
+          python send_digest.py
           echo "✅ FirstLight completed!"
