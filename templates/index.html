@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FirstLight - AI Morning Digest</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header>
+            <h1>☀️ FirstLight</h1>
+            <p class="tagline">Wake up to AI-powered morning briefings</p>
+        </header>
+
+        <!-- Hero Section -->
+        <section class="hero">
+            <h2>Start Your Day Informed</h2>
+            <p>Get personalized weather forecasts and top news delivered to your inbox every morning.</p>
+        </section>
+
+        <!-- Subscription Form -->
+        <section class="subscription">
+            <div class="form-container">
+                <h3>Subscribe Now</h3>
+                
+                <form id="subscribeForm">
+                    <div class="input-group">
+                        <input 
+                            type="email" 
+                            id="emailInput" 
+                            placeholder="Enter your email"
+                            required
+                        >
+                    </div>
+                    
+                    <button type="submit" id="subscribeBtn" class="btn-primary">
+                        Subscribe
+                    </button>
+                </form>
+
+                <div id="message" class="message"></div>
+                <div id="locationInfo" class="location-info"></div>
+            </div>
+        </section>
+
+        <!-- Features -->
+        <section class="features">
+            <h3>What You'll Get</h3>
+            <div class="feature-grid">
+                <div class="feature">
+                    <div class="icon">🌤️</div>
+                    <h4>Local Weather</h4>
+                    <p>Detailed forecast based on your location</p>
+                </div>
+                <div class="feature">
+                    <div class="icon">📰</div>
+                    <h4>Top News</h4>
+                    <p>Curated headlines from trusted sources</p>
+                </div>
+                <div class="feature">
+                    <div class="icon">🤖</div>
+                    <h4>AI Summary</h4>
+                    <p>Powered by Google Gemini AI</p>
+                </div>
+                <div class="feature">
+                    <div class="icon">📧</div>
+                    <h4>Daily Delivery</h4>
+                    <p>Fresh briefing every morning</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Footer -->
+        <footer>
+            <p>Powered by Google Gemini AI | <a href="#" id="unsubscribeLink">Unsubscribe</a> | <a href="/admin">Admin</a></p>
+        </footer>
+    </div>
+
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
+</body>
+</html>
