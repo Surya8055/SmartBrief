@@ -1,12 +1,10 @@
 name: SmartBrief Newsletter Job
 
 on:
-  # Runs every day at 12:05 PM CST (18:05 UTC)
   schedule:
-    - cron: "5 18 * * *"
-
-  # Manual trigger button in GitHub Actions
+    - cron: '15 18 * * *'
   workflow_dispatch:
+
 
 jobs:
   run-newsletter:
