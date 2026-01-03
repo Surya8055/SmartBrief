@@ -8,32 +8,32 @@ from email.mime.text import MIMEText
 
 from database import get_all_subscribers
 
-# ⏰ Timezone handling
 from timezonefinder import TimezoneFinder
 import pytz
 
-# ✅ Gemini AI (new API)
-from google.genai import Client as GenAI
+# ✅ Correct Gemini SDK
+from google.genai import Client
 
-# Load environment variables
+# --------------------------------------------------
+# ENV
+# --------------------------------------------------
+
 load_dotenv()
 
-# Configure Gemini
 GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
-client = GenAI(api_key=GEMINI_API_KEY) if GEMINI_API_KEY else None
-model_id = "models/gemini-2.5-flash"
+NEWS_API_KEY = os.environ.get("NEWS_API_KEY")
+SENDER_EMAIL = os.environ.get("SENDER_EMAIL")
+SENDER_PASSWORD = os.environ.get("SENDER_PASSWORD")
+
+client = Client(api_key=GEMINI_API_KEY)
 
 tf = TimezoneFinder()
-
 
 # --------------------------------------------------
 # TIME CHECK (12 PM – 2 PM LOCAL)
 # --------------------------------------------------
 
 def should_send_now(lat, lon):
-    """
-    Returns True if current local time is between 12:00–13:59.
-    """
     tz_name = tf.timezone_at(lat=lat, lng=lon)
     if not tz_name:
         return False
@@ -41,7 +41,9 @@ def should_send_now(lat, lon):
     local_tz = pytz.timezone(tz_name)
     local_time = datetime.now(pytz.utc).astimezone(local_tz)
 
-    return 12 <= local_time.hour < 14
+    # ✅ 5 PM – 7 PM local time
+    return 17 <= local_time.hour < 19
+
 
 
 # --------------------------------------------------
@@ -64,22 +66,19 @@ def fetch_weather(lat, lon):
     daily = data.get("daily", {})
 
     feels_like = (
-        daily.get("apparent_temperature_max", [current.get("temperature")])[0] +
-        daily.get("apparent_temperature_min", [current.get("temperature")])[0]
+        daily["apparent_temperature_max"][0] +
+        daily["apparent_temperature_min"][0]
     ) / 2
 
     return {
-        "temp": current.get("temperature"),
-        "windspeed": current.get("windspeed"),
-        "winddir": current.get("winddirection"),
         "max": daily["temperature_2m_max"][0],
         "min": daily["temperature_2m_min"][0],
         "feels_like": round(feels_like, 1),
         "sunrise": daily["sunrise"][0].split("T")[1],
         "sunset": daily["sunset"][0].split("T")[1],
+        "windspeed": current.get("windspeed"),
         "cloudcover": daily.get("cloudcover_mean", [0])[0],
-        "precipitation": daily.get("precipitation_sum", [0])[0],
-        "uv_index": daily.get("uv_index_max", [0])[0]
+        "precipitation": daily.get("precipitation_sum", [0])[0]
     }
 
 
@@ -91,24 +90,21 @@ def fetch_news(country="us", max_articles=5):
     url = (
         f"https://newsapi.org/v2/top-headlines"
         f"?country={country}&pageSize={max_articles}"
-        f"&apiKey={os.environ['NEWS_API_KEY']}"
+        f"&apiKey={NEWS_API_KEY}"
     )
 
     data = requests.get(url).json()
     articles = data.get("articles", [])
 
-    news_list = []
-    for article in articles:
-        title = article.get("title")
-        desc = article.get("description")
-        if title and desc:
-            news_list.append(f"{title} - {desc}")
-
-    return news_list
+    return [
+        f"{a['title']} - {a['description']}"
+        for a in articles
+        if a.get("title") and a.get("description")
+    ]
 
 
 # --------------------------------------------------
-# AI MESSAGE
+# AI CONTENT
 # --------------------------------------------------
 
 def ai_morning_message(weather, location, news_list):
@@ -116,46 +112,31 @@ def ai_morning_message(weather, location, news_list):
     news_text = "\n".join(news_list) if news_list else "No major news today."
 
     prompt = f"""
-You are a calm, premium AI morning assistant.
+You are a calm, premium AI assistant.
 
-Generate a clean, readable HTML email.
+Generate a CLEAN HTML EMAIL.
 
-STRUCTURE EXACTLY AS BELOW:
-
-1) A warm Good Morning greeting
-2) A bold "Weather Snapshot" section with bullet points:
-   - Min
-   - Max
-   - Feels Like
-   - Sunrise
-   - Sunset
-3) A 2–3 line short weather summary
-4) A bold "Top News" section with bullet points (1–2 sentences each)
-
-Keep spacing clean. Do NOT use markdown symbols like ** or ###.
-Use proper HTML tags only (<b>, <ul>, <li>, <p>).
+Use ONLY HTML tags like <p>, <b>, <ul>, <li>.
 
 Location: {location}
 Date: {today}
 
-Weather details:
+Weather:
 Min: {weather['min']}°C
 Max: {weather['max']}°C
 Feels Like: {weather['feels_like']}°C
 Sunrise: {weather['sunrise']}
 Sunset: {weather['sunset']}
-Wind: {weather['windspeed']} km/h
-Cloud cover: {weather['cloudcover']}%
-Precipitation: {weather['precipitation']} mm
 
 News:
 {news_text}
 """
 
-    if not client:
-        return f"<p>⚠️ AI service not available. Here’s your news:</p><pre>{news_text}</pre>"
+    response = client.models.generate_content(
+        model="gemini-2.5-flash",
+        contents=prompt
+    )
 
-    response = client.generate_text(model=model_id, prompt=prompt)
     return response.text
 
 
@@ -164,40 +145,32 @@ News:
 # --------------------------------------------------
 
 def send_email(to_email, subject, html_content):
-    EMAIL = os.environ["SENDER_EMAIL"]
-    PASSWORD = os.environ["SENDER_PASSWORD"]
-
     msg = MIMEMultipart("alternative")
-    msg["From"] = EMAIL
+    msg["From"] = SENDER_EMAIL
     msg["To"] = to_email
     msg["Subject"] = subject
 
-    full_html = f"""
+    html = f"""
     <html>
-    <body style="font-family: Arial, sans-serif; background:#f5f5f5; padding:20px;">
-      <div style="max-width:600px;margin:auto;background:white;border-radius:12px;overflow:hidden;">
+    <body style="font-family:Arial;background:#f5f5f5;padding:20px;">
+      <div style="max-width:600px;margin:auto;background:white;border-radius:10px;">
         <div style="background:#6b73ff;color:white;padding:20px;text-align:center;">
-          <h1 style="margin:0;">☀️ FirstLight</h1>
-          <p style="margin:5px 0 0;">Your AI Morning Briefing</p>
+          <h1>☀️ FirstLight</h1>
+          <p>Your AI Briefing</p>
         </div>
-
-        <div style="padding:25px;color:#333;line-height:1.6;">
+        <div style="padding:25px;">
           {html_content}
-        </div>
-
-        <div style="background:#fafafa;padding:15px;text-align:center;font-size:12px;color:#888;">
-          Powered by Gemini AI
         </div>
       </div>
     </body>
     </html>
     """
 
-    msg.attach(MIMEText(full_html, "html"))
+    msg.attach(MIMEText(html, "html"))
 
     with smtplib.SMTP_SSL("smtp.gmail.com", 465) as server:
-        server.login(EMAIL, PASSWORD)
-        server.sendmail(EMAIL, to_email, msg.as_string())
+        server.login(SENDER_EMAIL, SENDER_PASSWORD)
+        server.sendmail(SENDER_EMAIL, to_email, msg.as_string())
 
 
 # --------------------------------------------------
@@ -211,25 +184,25 @@ def main():
     print(f"📊 Subscribers found: {len(subscribers)}\n")
 
     for sub in subscribers:
-        id_, email, lat, lon, location_name, subscribed_at = sub
+        _, email, lat, lon, location, _ = sub
 
         if not should_send_now(lat, lon):
-            print(f"⏭️  Skipping {email} (not 12–2 PM local)")
+            print(f"⏭️ Skipping {email}")
             continue
 
-        print(f"📧 Sending to {email} ({location_name})")
+        print(f"📧 Sending to {email}")
 
         weather = fetch_weather(lat, lon)
-        news = fetch_news("us")
+        news = fetch_news()
 
-        message = ai_morning_message(weather, location_name, news)
+        message = ai_morning_message(weather, location, news)
 
         subject = f"☀️ FirstLight — {datetime.now().strftime('%A, %B %d')}"
-
         send_email(email, subject, message)
-        print("   ✅ Sent\n")
 
-    print("✅ FirstLight run complete\n")
+        print("✅ Sent\n")
+
+    print("✅ Job complete\n")
 
 
 if __name__ == "__main__":
