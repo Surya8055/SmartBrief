@@ -1,13 +1,10 @@
 import requests
 import os
 from dotenv import load_dotenv
-import google.generativeai as genai
 from datetime import datetime
 import smtplib
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
-import random
-import time
 
 from database import get_all_subscribers
 
@@ -15,22 +12,27 @@ from database import get_all_subscribers
 from timezonefinder import TimezoneFinder
 import pytz
 
+# ✅ Gemini AI (new API)
+from google.genai import Client as GenAI
+
 # Load environment variables
 load_dotenv()
 
 # Configure Gemini
-genai.configure(api_key=os.environ["GEMINI_API_KEY"])
-model = genai.GenerativeModel("models/gemini-2.5-flash")
+GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
+client = GenAI(api_key=GEMINI_API_KEY) if GEMINI_API_KEY else None
+model_id = "models/gemini-2.5-flash"
 
 tf = TimezoneFinder()
 
+
 # --------------------------------------------------
-# TIME CHECK (12–1 PM CST)
+# TIME CHECK (12 PM – 2 PM LOCAL)
 # --------------------------------------------------
+
 def should_send_now(lat, lon):
     """
-    Returns True if current local time (based on lat/lon)
-    is between 12:00–12:59 PM CST
+    Returns True if current local time is between 12:00–13:59.
     """
     tz_name = tf.timezone_at(lat=lat, lng=lon)
     if not tz_name:
@@ -39,13 +41,13 @@ def should_send_now(lat, lon):
     local_tz = pytz.timezone(tz_name)
     local_time = datetime.now(pytz.utc).astimezone(local_tz)
 
-    # Convert to CST
-    cst_time = local_time.astimezone(pytz.timezone("US/Central"))
-    return 12 <= cst_time.hour < 13
+    return 12 <= local_time.hour < 14
+
 
 # --------------------------------------------------
 # WEATHER
 # --------------------------------------------------
+
 def fetch_weather(lat, lon):
     url = (
         f"https://api.open-meteo.com/v1/forecast"
@@ -80,9 +82,11 @@ def fetch_weather(lat, lon):
         "uv_index": daily.get("uv_index_max", [0])[0]
     }
 
+
 # --------------------------------------------------
 # NEWS
 # --------------------------------------------------
+
 def fetch_news(country="us", max_articles=5):
     url = (
         f"https://newsapi.org/v2/top-headlines"
@@ -102,9 +106,11 @@ def fetch_news(country="us", max_articles=5):
 
     return news_list
 
+
 # --------------------------------------------------
 # AI MESSAGE
 # --------------------------------------------------
+
 def ai_morning_message(weather, location, news_list):
     today = datetime.now().strftime("%A, %d %B %Y")
     news_text = "\n".join(news_list) if news_list else "No major news today."
@@ -146,12 +152,17 @@ News:
 {news_text}
 """
 
-    response = model.generate_content(prompt)
+    if not client:
+        return f"<p>⚠️ AI service not available. Here’s your news:</p><pre>{news_text}</pre>"
+
+    response = client.generate_text(model=model_id, prompt=prompt)
     return response.text
+
 
 # --------------------------------------------------
 # EMAIL
 # --------------------------------------------------
+
 def send_email(to_email, subject, html_content):
     EMAIL = os.environ["SENDER_EMAIL"]
     PASSWORD = os.environ["SENDER_PASSWORD"]
@@ -188,9 +199,11 @@ def send_email(to_email, subject, html_content):
         server.login(EMAIL, PASSWORD)
         server.sendmail(EMAIL, to_email, msg.as_string())
 
+
 # --------------------------------------------------
 # MAIN
 # --------------------------------------------------
+
 def main():
     print("\n🚀 FirstLight Distribution Started\n")
 
@@ -201,23 +214,23 @@ def main():
         id_, email, lat, lon, location_name, subscribed_at = sub
 
         if not should_send_now(lat, lon):
-            print(f"⏭️ Skipping {email} (outside 12–1 PM CST)")
+            print(f"⏭️  Skipping {email} (not 12–2 PM local)")
             continue
 
-        # Random delay between 0–3600 seconds (spread within the 12–1 PM window)
-        delay = random.randint(0, 3600)
-        print(f"⏳ Delaying email to {email} by {delay} seconds")
-        time.sleep(delay)
-
         print(f"📧 Sending to {email} ({location_name})")
+
         weather = fetch_weather(lat, lon)
         news = fetch_news("us")
+
         message = ai_morning_message(weather, location_name, news)
+
         subject = f"☀️ FirstLight — {datetime.now().strftime('%A, %B %d')}"
+
         send_email(email, subject, message)
         print("   ✅ Sent\n")
 
     print("✅ FirstLight run complete\n")
+
 
 if __name__ == "__main__":
     main()
