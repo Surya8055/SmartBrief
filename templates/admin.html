@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FirstLight - Subscribers</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 20px;
+            margin: 0;
+        }
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+        h1 {
+            color: #667eea;
+            text-align: center;
+        }
+        .stats {
+            background: #f0f0f0;
+            padding: 15px;
+            border-radius: 10px;
+            text-align: center;
+            margin: 20px 0;
+            font-size: 1.2rem;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+        th {
+            background: #667eea;
+            color: white;
+            padding: 12px;
+            text-align: left;
+        }
+        td {
+            padding: 12px;
+            border-bottom: 1px solid #e0e0e0;
+        }
+        tr:hover {
+            background: #f5f5f5;
+        }
+        .empty {
+            text-align: center;
+            color: #999;
+            padding: 40px;
+        }
+        .btn {
+            background: #667eea;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-block;
+            margin-right: 10px;
+        }
+        .btn:hover {
+            background: #5568d3;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>☀️ FirstLight Subscribers</h1>
+        
+        <div class="stats">
+            <strong>Total Active Subscribers:</strong> <span id="totalCount">Loading...</span>
+        </div>
+        
+        <button class="btn" onclick="loadSubscribers()">🔄 Refresh</button>
+        <a href="/" class="btn">🏠 Back to Home</a>
+        
+        <table id="subscribersTable">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Email</th>
+                    <th>Location</th>
+                    <th>Latitude</th>
+                    <th>Longitude</th>
+                    <th>Subscribed At</th>
+                </tr>
+            </thead>
+            <tbody id="tableBody">
+                <tr>
+                    <td colspan="6" class="empty">Loading...</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <script>
+        async function loadSubscribers() {
+            try {
+                const response = await fetch('/api/subscribers');
+                const data = await response.json();
+                
+                document.getElementById('totalCount').textContent = data.total;
+                
+                const tbody = document.getElementById('tableBody');
+                
+                if (data.subscribers.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="6" class="empty">No subscribers yet</td></tr>';
+                    return;
+                }
+                
+                tbody.innerHTML = data.subscribers.map(sub => `
+                    <tr>
+                        <td>${sub.id}</td>
+                        <td>${sub.email}</td>
+                        <td>${sub.location_name || 'Unknown'}</td>
+                        <td>${sub.latitude.toFixed(4)}</td>
+                        <td>${sub.longitude.toFixed(4)}</td>
+                        <td>${sub.subscribed_at}</td>
+                    </tr>
+                `).join('');
+                
+            } catch (error) {
+                console.error('Error loading subscribers:', error);
+                document.getElementById('tableBody').innerHTML = 
+                    '<tr><td colspan="6" class="empty">Error loading subscribers</td></tr>';
+            }
+        }
+        
+        // Load on page load
+        loadSubscribers();
+    </script>
+</body>
+</html>
