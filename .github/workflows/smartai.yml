@@ -2,39 +2,51 @@ name: SmartBrief Newsletter Job
 
 on:
   schedule:
-    # Runs every 15 minutes
-    - cron: "*/15 * * * *"
-
-  # Allow manual trigger
-  workflow_dispatch:
+    - cron: "*/15 * * * *"  # Every 15 minutes
+  workflow_dispatch:  # Manual trigger
 
 jobs:
   send_newsletter:
     runs-on: ubuntu-latest
+    timeout-minutes: 10  # Kill if takes longer than 10 minutes
 
     steps:
-      # 1️⃣ Checkout repo
       - name: Checkout repository
         uses: actions/checkout@v3
 
-      # 2️⃣ Setup Python
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: "3.11"
 
-      # 3️⃣ Install dependencies
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
-      # 4️⃣ Run newsletter job
+      - name: Initialize database with test subscribers
+        run: |
+          python -c "
+          from database import init_db, add_subscriber, get_all_subscribers
+          init_db()
+          
+          # Add test subscribers (replace with your real subscribers for production)
+          add_subscriber('anaghavs09@gmail.com', 32.90, -96.92, 'Farmers Branch, United States')
+          add_subscriber('suryasince8055@gmail.com', 32.90, -96.92, 'Farmers Branch, United States')
+          add_subscriber('sanjeev.an@northeastern.edu', 32.90, -96.92, 'Farmers Branch, United States')
+          
+          subs = get_all_subscribers()
+          print(f'✅ Database initialized with {len(subs)} subscribers')
+          "
+
       - name: Run SmartBrief Newsletter
+        timeout-minutes: 8  # Timeout for this step specifically
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           NEWS_API_KEY: ${{ secrets.NEWS_API_KEY }}
           SENDER_EMAIL: ${{ secrets.SENDER_EMAIL }}
           SENDER_PASSWORD: ${{ secrets.SENDER_PASSWORD }}
         run: |
+          echo "🚀 Starting digest distribution..."
           python send_digest.py
+          echo "✅ Distribution complete!"
