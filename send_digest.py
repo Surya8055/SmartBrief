@@ -45,8 +45,8 @@ def should_send_now(lat, lon, last_sent_date):
         if last_sent_date == today_str:
             return False
 
-        # 17–19 hours = 5–7 PM
-        return 17 <= local_time.hour < 19
+        # 7–8 AM
+        return 7 <= local_time.hour < 8
     except Exception as e:
         print(f"   ⚠️ Time check failed: {e}")
         return True  # Send anyway if time check fails
