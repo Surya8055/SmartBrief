@@ -49,7 +49,7 @@ def is_7am_local_time(lat, lon, last_sent_date):
             return False
         
         # Check if 7-8 AM (hour == 7)
-        return local_time.hour == 7
+        return local_time.hour == 4
         
     except Exception as e:
         print(f"      ⚠️ Time check error: {e}")
