@@ -141,7 +141,7 @@ def ai_message(weather, location, news_list):
     news_text = "\n".join(news_list[:5])
 
     prompt = f"""
-Create a friendly Good Morning email for {location} on {today}.
+Create a friendly Good Morning email without Subject for {location} on {today}.
 
 1. Weather Snapshot (HTML bullet points):
    - Min: {weather['min']}°C
