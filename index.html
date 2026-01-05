@@ -3,40 +3,403 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>SmartBrief – Your Morning Brief</title>
-
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+  <title>SmartBrief – Your Intelligent Morning Companion</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Poppins:wght@600;700;800;900&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css">
 </head>
-
 <body>
-
-<section class="hero">
-  <div class="hero-left">
-    <h1>🌅 Start Your Day Smart</h1>
-    <p>Receive a personalized morning brief with news, weather, and insights.</p>
-
-    <form id="subscribeForm" class="subscribe-form">
-      <input type="email" id="emailInput" placeholder="Enter your email" required>
-      <button type="submit" class="btn-primary">Subscribe</button>
-    </form>
-
-    <p id="locationInfo"></p>
-    <p id="message" class="message"></p>
+  <!-- Animated Background -->
+  <div class="bg-elements">
+    <div class="floating-shape shape-1"></div>
+    <div class="floating-shape shape-2"></div>
+    <div class="floating-shape shape-3"></div>
+    <div class="floating-shape shape-4"></div>
   </div>
 
-  <div class="hero-right">
-    <img src="images/morning-hero.png" alt="Morning Illustration">
-  </div>
-</section>
+  <!-- Navigation -->
+  <nav class="navbar">
+    <div class="nav-container">
+      <div class="logo">
+        <div class="logo-icon">
+          <svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="20" cy="20" r="8" fill="url(#logoGradient)"/>
+            <path d="M20 4v4M20 32v4M36 20h-4M8 20H4M31.2 8.8l-2.8 2.8M11.6 28.4l-2.8 2.8M31.2 31.2l-2.8-2.8M11.6 11.6L8.8 8.8" stroke="url(#logoGradient)" stroke-width="2.5" stroke-linecap="round"/>
+            <defs>
+              <linearGradient id="logoGradient" x1="8" y1="8" x2="32" y2="32">
+                <stop offset="0%" stop-color="#DC143C"/>
+                <stop offset="100%" stop-color="#7B68EE"/>
+              </linearGradient>
+            </defs>
+          </svg>
+        </div>
+        <span class="logo-text">SmartBrief</span>
+      </div>
+      <div class="nav-links">
+        <a href="#features" class="nav-link">Features</a>
+        <a href="#benefits" class="nav-link">Benefits</a>
+        <a href="unsubscribe.html" class="nav-link-cta">Manage</a>
+      </div>
+    </div>
+  </nav>
 
-<footer>
-  <p>
-    SmartBrief – Energize your mornings ✨ |
-    <a href="unsubscribe.html" class="footer-link">Unsubscribe</a>
-  </p>
-</footer>
+  <!-- Hero Section -->
+  <section class="hero-section">
+    <div class="hero-container">
+      <div class="hero-content">
+        <div class="badge">
+          <div class="badge-dot"></div>
+          <span>Intelligent Daily Digest</span>
+        </div>
+      
+        <h1 class="hero-title">
+          <span class="gradient-text">SmartBrief</span>
+        </h1>
+        <p class="hero-tagline">Start Your Day Smart</p>
+        
+        <p class="hero-subtitle">
+          Your personalized morning intelligence delivered daily. Weather insights, 
+          curated headlines, and smart summaries—all in one beautiful email that 
+          adapts to your timezone, anywhere on the planet.
+        </p>
 
-<script src="script.js"></script>
+        <!-- Subscribe Form -->
+        <form id="subscribeForm" class="subscribe-form">
+          <div class="form-group">
+            <div class="input-wrapper">
+              <svg class="input-icon" width="20" height="20" viewBox="0 0 20 20" fill="none">
+                <path d="M2.5 6.66666L10 11.6667L17.5 6.66666M3.33333 15H16.6667C17.5871 15 18.3333 14.2538 18.3333 13.3333V6.66666C18.3333 5.74619 17.5871 5 16.6667 5H3.33333C2.41286 5 1.66667 5.74619 1.66667 6.66666V13.3333C1.66667 14.2538 2.41286 15 3.33333 15Z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+              <input 
+                type="email" 
+                id="emailInput" 
+                placeholder="Enter your email to get started"
+                required
+              >
+            </div>
+            <button type="submit" id="subscribeBtn" class="btn-primary">
+              <span class="btn-text">Start Free</span>
+              <svg class="btn-icon" width="20" height="20" viewBox="0 0 20 20" fill="none">
+                <path d="M4.16667 10H15.8333M15.8333 10L10 4.16666M15.8333 10L10 15.8333" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </button>
+          </div>
+          
+          <div id="locationInfo" class="location-info"></div>
+          <div id="message" class="message-box"></div>
+        </form>
+
+        <!-- Trust Indicators -->
+        <div class="trust-badges">
+          <div class="trust-item">
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+              <path d="M10 18C14.4183 18 18 14.4183 18 10C18 5.58172 14.4183 2 10 2C5.58172 2 2 5.58172 2 10C2 14.4183 5.58172 18 10 18Z" stroke="currentColor" stroke-width="2"/>
+              <path d="M6 10L9 13L14 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            <span>Always Free</span>
+          </div>
+          <div class="trust-item">
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+              <path d="M10 2L12.5 7L18 8L14 12L15 18L10 15.5L5 18L6 12L2 8L7.5 7L10 2Z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            <span>No Credit Card</span>
+          </div>
+          <div class="trust-item">
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+              <path d="M10 2C10 2 4 4 4 8C4 12 8 16 10 18C12 16 16 12 16 8C16 4 10 2 10 2Z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            <span>Privacy Protected</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Hero Visual - NEW UNIQUE DESIGN -->
+      <div class="hero-visual-new">
+        <!-- Floating Cards -->
+        <div class="floating-card card-weather">
+          <div class="card-icon-large">🌤️</div>
+          <div class="card-title">Weather</div>
+          <div class="card-value">22°C</div>
+          <div class="card-subtitle">Sunny Day</div>
+        </div>
+
+        <div class="floating-card card-news">
+          <div class="card-icon-large">📰</div>
+          <div class="card-title">Headlines</div>
+          <div class="card-value">5</div>
+          <div class="card-subtitle">Top Stories</div>
+        </div>
+
+        <div class="floating-card card-delivery">
+          <div class="card-icon-large">📧</div>
+          <div class="card-title">Delivery</div>
+          <div class="card-value">✓</div>
+          <div class="card-subtitle">Automated</div>
+        </div>
+
+        <!-- Decorative Elements -->
+        <div class="deco-circle circle-1"></div>
+        <div class="deco-circle circle-2"></div>
+        <div class="deco-circle circle-3"></div>
+        
+        <!-- Central Glow -->
+        <div class="central-glow"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Features Section -->
+  <section id="features" class="features-section">
+    <div class="section-container">
+      <div class="section-header">
+        <div class="section-badge">What You Get</div>
+        <h2 class="section-title">Everything You Need in One Email</h2>
+        <p class="section-subtitle">Comprehensive morning intelligence at your fingertips</p>
+      </div>
+
+      <div class="features-grid">
+        <div class="feature-card" data-tilt>
+          <div class="feature-image">
+            <img src="https://images.unsplash.com/photo-1592210454359-9043f067919b?w=400&h=300&fit=crop&q=80" alt="Weather">
+            <div class="feature-overlay"></div>
+          </div>
+          <div class="feature-content">
+            <div class="feature-icon">🌤️</div>
+            <h3 class="feature-title">Hyperlocal Weather</h3>
+            <p class="feature-description">
+              Get precise weather forecasts for your exact location with temperature, 
+              conditions, and smart recommendations for your day.
+            </p>
+            <div class="feature-tags">
+              <span class="tag">Accurate</span>
+              <span class="tag">Real-time</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="feature-card" data-tilt>
+          <div class="feature-image">
+            <img src="https://images.unsplash.com/photo-1504711434969-e33886168f5c?w=400&h=300&fit=crop&q=80" alt="News">
+            <div class="feature-overlay"></div>
+          </div>
+          <div class="feature-content">
+            <div class="feature-icon">📰</div>
+            <h3 class="feature-title">Curated Headlines</h3>
+            <p class="feature-description">
+              Top global news stories filtered and summarized for quick consumption. 
+              Stay informed without the overwhelm.
+            </p>
+            <div class="feature-tags">
+              <span class="tag">Relevant</span>
+              <span class="tag">Concise</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="feature-card" data-tilt>
+          <div class="feature-image">
+            <img src="https://images.unsplash.com/photo-1563986768609-322da13575f3?w=400&h=300&fit=crop&q=80" alt="Smart Summaries">
+            <div class="feature-overlay"></div>
+          </div>
+          <div class="feature-content">
+            <div class="feature-icon">✨</div>
+            <h3 class="feature-title">Smart Summaries</h3>
+            <p class="feature-description">
+              Intelligent analysis and context that helps you understand what matters 
+              and why it's relevant to your day ahead.
+            </p>
+            <div class="feature-tags">
+              <span class="tag">Intelligent</span>
+              <span class="tag">Contextual</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="feature-card" data-tilt>
+          <div class="feature-image">
+            <img src="https://images.unsplash.com/photo-1526778548025-fa2f459cd5c1?w=400&h=300&fit=crop&q=80" alt="Global">
+            <div class="feature-overlay"></div>
+          </div>
+          <div class="feature-content">
+            <div class="feature-icon">🌍</div>
+            <h3 class="feature-title">Worldwide Coverage</h3>
+            <p class="feature-description">
+              Works anywhere on Earth with automatic timezone detection. Travel 
+              freely and still get your morning brief at the perfect time.
+            </p>
+            <div class="feature-tags">
+              <span class="tag">Global</span>
+              <span class="tag">Adaptive</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="feature-card" data-tilt>
+          <div class="feature-image">
+            <img src="https://images.unsplash.com/photo-1501139083538-0139583c060f?w=400&h=300&fit=crop&q=80" alt="Perfect Timing">
+            <div class="feature-overlay"></div>
+          </div>
+          <div class="feature-content">
+            <div class="feature-icon">⏰</div>
+            <h3 class="feature-title">Automated Delivery</h3>
+            <p class="feature-description">
+              Arrives at the ideal time every morning in your local timezone. 
+              Consistent, reliable, and never intrusive.
+            </p>
+            <div class="feature-tags">
+              <span class="tag">Punctual</span>
+              <span class="tag">Consistent</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="feature-card" data-tilt>
+          <div class="feature-image">
+            <img src="https://images.unsplash.com/photo-1614064641938-3bbee52942c7?w=400&h=300&fit=crop&q=80" alt="Privacy">
+            <div class="feature-overlay"></div>
+          </div>
+          <div class="feature-content">
+            <div class="feature-icon">🔒</div>
+            <h3 class="feature-title">Privacy First</h3>
+            <p class="feature-description">
+              Your data stays secure and private. No tracking, no selling. 
+              Stop anytime with complete control over your subscription.
+            </p>
+            <div class="feature-tags">
+              <span class="tag">Secure</span>
+              <span class="tag">Transparent</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Benefits Section -->
+  <section id="benefits" class="benefits-section">
+    <div class="section-container">
+      <div class="benefits-grid">
+        <div class="benefits-content">
+          <div class="section-badge">Why Choose SmartBrief</div>
+          <h2 class="section-title">Transform Your Morning Routine</h2>
+          <p class="benefits-text">
+            Imagine waking up to everything you need to start your day—weather, 
+            news, and insights—beautifully organized and personalized just for you.
+          </p>
+          
+          <div class="benefits-list">
+            <div class="benefit-item">
+              <div class="benefit-icon">✨</div>
+              <div class="benefit-content">
+                <h4>Save Time</h4>
+                <p>Get all your morning information in one place instead of checking multiple apps</p>
+              </div>
+            </div>
+            
+            <div class="benefit-item">
+              <div class="benefit-icon">🎯</div>
+              <div class="benefit-content">
+                <h4>Stay Focused</h4>
+                <p>Only what matters, without the noise and distractions of social media</p>
+              </div>
+            </div>
+            
+            <div class="benefit-item">
+              <div class="benefit-icon">🚀</div>
+              <div class="benefit-content">
+                <h4>Start Strong</h4>
+                <p>Begin each day informed, prepared, and ready to tackle whatever comes</p>
+              </div>
+            </div>
+          </div>
+          
+          <a href="#" class="btn-secondary" onclick="document.getElementById('emailInput').scrollIntoView({behavior:'smooth'}); document.getElementById('emailInput').focus(); return false;">
+            Get Your First Brief
+          </a>
+        </div>
+        
+        <div class="benefits-visual">
+          <img src="https://images.unsplash.com/photo-1522071820081-009f0129c71c?w=600&h=800&fit=crop&q=80" alt="Team Success" class="benefits-image">
+          <div class="stats-card">
+            <div class="stat">
+              <div class="stat-number">5 min</div>
+              <div class="stat-label">Daily Read Time</div>
+            </div>
+            <div class="stat">
+              <div class="stat-number">100%</div>
+              <div class="stat-label">Personalized</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- CTA Section -->
+  <section class="cta-section">
+    <div class="cta-glow"></div>
+    <div class="cta-container">
+      <div class="cta-content">
+        <h2 class="cta-title">Ready for Smarter Mornings?</h2>
+        <p class="cta-subtitle">Join thousands who've transformed how they start their day</p>
+        <a href="#" class="btn-cta" onclick="document.getElementById('emailInput').scrollIntoView({behavior:'smooth'}); document.getElementById('emailInput').focus(); return false;">
+          <span>Start Your Free Brief</span>
+          <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+            <path d="M4.16667 10H15.8333M15.8333 10L10 4.16666M15.8333 10L10 15.8333" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </a>
+        <div class="cta-note">No commitment • Cancel anytime</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <div class="footer-container">
+      <div class="footer-top">
+        <div class="footer-brand">
+          <div class="logo">
+            <div class="logo-icon">
+              <svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <circle cx="20" cy="20" r="8" fill="url(#logoGradientFooter)"/>
+                <path d="M20 4v4M20 32v4M36 20h-4M8 20H4M31.2 8.8l-2.8 2.8M11.6 28.4l-2.8 2.8M31.2 31.2l-2.8-2.8M11.6 11.6L8.8 8.8" stroke="url(#logoGradientFooter)" stroke-width="2.5" stroke-linecap="round"/>
+                <defs>
+                  <linearGradient id="logoGradientFooter" x1="8" y1="8" x2="32" y2="32">
+                    <stop offset="0%" stop-color="#DC143C"/>
+                    <stop offset="100%" stop-color="#7B68EE"/>
+                  </linearGradient>
+                </defs>
+              </svg>
+            </div>
+            <span class="logo-text">SmartBrief</span>
+          </div>
+          <p class="footer-tagline">Your intelligent morning companion</p>
+        </div>
+        
+        <div class="footer-links">
+          <div class="footer-col">
+            <h4>Product</h4>
+            <a href="#features">Features</a>
+            <a href="#benefits">Benefits</a>
+            <a href="unsubscribe.html">Manage Subscription</a>
+          </div>
+          
+          <div class="footer-col">
+            <h4>Company</h4>
+            <a href="#" onclick="return false;">About Us</a>
+            <a href="#" onclick="return false;">Privacy Policy</a>
+            <a href="#" onclick="return false;">Terms of Service</a>
+          </div>
+        </div>
+      </div>
+      
+      <div class="footer-bottom">
+        <p class="footer-text">
+          © 2025 SmartBrief. Made with ❤️ for productive mornings
+        </p>
+      </div>
+    </div>
+  </footer>
+
+  <script src="script.js"></script>
 </body>
 </html>
