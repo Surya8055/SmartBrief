@@ -49,7 +49,7 @@ def is_7am_local_time(lat, lon, last_sent_date):
             return False
         
         # Check if 7-8 AM (hour == 7)
-        return local_time.hour == 17
+        return local_time.hour == 7
         
     except Exception as e:
         print(f"      ⚠️ Time check error: {e}")
@@ -285,7 +285,7 @@ def main():
         row_id, email, lat, lon, location, subscribed_at, last_sent = sub
         
         print(f"\n{'='*60}")
-        print(f"📧 [{idx}/{len(subscribers)}] {email}")
+        # print(f"📧 [{idx}/{len(subscribers)}] {email}")
         print(f"   📍 {location}")
         print(f"{'='*60}")
 
@@ -332,10 +332,10 @@ def main():
             if send_email(email, subject, message):
                 print("      ✓ Email sent successfully!")
                 sent_count += 1
-                print(f"   ✅ SUCCESS for {email}")
+                # print(f"   ✅ SUCCESS for {email}")
             else:
                 failed_count += 1
-                print(f"   ❌ Email delivery failed")
+                # print(f"   ❌ Email delivery failed")
             
             # Wait before next subscriber
             if idx < len(subscribers):
