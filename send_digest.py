@@ -8,6 +8,7 @@ import smtplib
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 import time
+import sys
 from read_sheets import get_subscribers_from_sheets
 
 # Load environment variables
@@ -17,6 +18,9 @@ GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
 NEWS_API_KEY = os.environ.get("NEWS_API_KEY")
 SENDER_EMAIL = os.environ.get("SENDER_EMAIL")
 SENDER_PASSWORD = os.environ.get("SENDER_PASSWORD")
+
+# Check for test mode flag
+TEST_MODE = '--test' in sys.argv
 
 # Initialize Gemini
 import google.generativeai as genai
@@ -45,7 +49,7 @@ def is_7am_local_time(lat, lon, last_sent_date):
             return False
         
         # Check if 7-8 AM (hour == 7)
-        return local_time.hour == 7
+        return local_time.hour == 12
         
     except Exception as e:
         print(f"      ⚠️ Time check error: {e}")
@@ -82,7 +86,6 @@ def fetch_weather(lat, lon, max_retries=3):
                 daily.get("apparent_temperature_min", [current.get("temperature")])[0]
             ) / 2
 
-            # Successfully got data
             return {
                 "temp": current.get("temperature", 0),
                 "windspeed": current.get("windspeed", 0),
@@ -100,7 +103,7 @@ def fetch_weather(lat, lon, max_retries=3):
         except Exception as e:
             if attempt < max_retries - 1:
                 print(f"         ⚠️ Attempt {attempt+1} failed: {str(e)[:50]}...")
-                time.sleep(2)  # Wait 2 seconds before retry
+                time.sleep(2)
                 continue
             else:
                 print(f"         ❌ All {max_retries} attempts failed")
@@ -162,7 +165,6 @@ Use HTML tags. Keep it concise and cheerful.
         return response.text
     except Exception as e:
         print(f"         ⚠️ AI generation failed: {e}")
-        # Simple fallback without hardcoded weather
         news_html = ''.join([f'<li>{n[:150]}...</li>' for n in news_list[:5]])
         return f"""
         <h2>Good Morning! ☀️</h2>
@@ -183,30 +185,57 @@ Use HTML tags. Keep it concise and cheerful.
 
 
 # ----------------------------
-# SEND EMAIL
+# SEND EMAIL WITH UNSUBSCRIBE LINK
 # ----------------------------
 def send_email(to_email, subject, html_content):
-    """Send email to subscriber"""
+    """Send email to subscriber with personalized unsubscribe link"""
     try:
         msg = MIMEMultipart("alternative")
         msg["From"] = SENDER_EMAIL
         msg["To"] = to_email
         msg["Subject"] = subject
 
+        # Personalized unsubscribe link with email pre-filled
+        from urllib.parse import quote
+        unsubscribe_url = f"https://surya8055.github.io/SmartBrief/unsubscribe.html?email={quote(to_email)}"
+
         full_html = f"""
         <html>
-        <body style="font-family: Arial, sans-serif; background:#f5f5f5; padding:20px;">
-          <div style="max-width:600px;margin:auto;background:white;border-radius:12px;overflow:hidden;box-shadow:0 4px 6px rgba(0,0,0,0.1);">
-            <div style="background:#6b73ff;color:white;padding:25px;text-align:center;">
-              <h1 style="margin:0;font-size:2rem;">☀️ SmartBrief</h1>
-              <p style="margin:5px 0 0;opacity:0.9;">Your AI Morning Briefing</p>
+        <body style="font-family: 'Segoe UI', Arial, sans-serif; background:#f8fafc; padding:20px;">
+          <div style="max-width:600px;margin:auto;background:white;border-radius:16px;overflow:hidden;box-shadow:0 4px 6px rgba(0,0,0,0.05);border:1px solid #e2e8f0;">
+            
+            <!-- Header -->
+            <div style="background:linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);color:white;padding:30px;text-align:center;">
+              <h1 style="margin:0;font-size:2.2rem;font-weight:600;">☀️ SmartBrief</h1>
+              <p style="margin:8px 0 0;opacity:0.95;font-size:1rem;">Your AI Morning Briefing</p>
             </div>
-            <div style="padding:30px;color:#333;line-height:1.6;">
+            
+            <!-- Content -->
+            <div style="padding:35px;color:#1e293b;line-height:1.7;">
               {html_content}
             </div>
-            <div style="background:#fafafa;padding:20px;text-align:center;font-size:12px;color:#888;border-top:1px solid #e0e0e0;">
-              <p style="margin:0;">Powered by Google Gemini AI</p>
+            
+            <!-- Footer with Unsubscribe -->
+            <div style="background:#f8fafc;padding:25px;text-align:center;border-top:1px solid #e2e8f0;">
+              <p style="margin:0;color:#64748b;font-size:13px;font-weight:500;">
+                Powered by Google Gemini AI
+              </p>
+              
+              <div style="margin-top:18px;padding-top:18px;border-top:1px solid #e2e8f0;">
+                <p style="margin:0;color:#94a3b8;font-size:12px;line-height:1.6;">
+                  Not interested anymore? 
+                  <a href="{unsubscribe_url}" 
+                     style="color:#3b82f6;text-decoration:none;font-weight:600;">
+                    Click here to unsubscribe
+                  </a>
+                </p>
+              </div>
+              
+              <p style="margin:12px 0 0;color:#cbd5e1;font-size:11px;">
+                You're receiving this because you subscribed to SmartBrief at {to_email}
+              </p>
             </div>
+            
           </div>
         </body>
         </html>
@@ -230,18 +259,23 @@ def send_email(to_email, subject, html_content):
 def main():
     print("\n" + "="*70)
     print(f"🚀 SmartBrief Time-Based Distribution")
+    
+    if TEST_MODE:
+        print(f"🧪 TEST MODE ENABLED - Sending to all active subscribers NOW")
+    
     print(f"⏰ UTC Time: {datetime.now(pytz.utc).strftime('%Y-%m-%d %H:%M:%S %Z')}")
     print("="*70 + "\n")
     
     # Read from Google Sheets
-    print("📊 Reading subscribers from Google Sheets...")
+    print("📊 Reading active subscribers from Google Sheets...")
     subscribers = get_subscribers_from_sheets()
     
     if not subscribers:
-        print("⚠️  No subscribers found!")
+        print("⚠️  No active subscribers found!")
+        print("💡 Make sure subscribers have is_active = TRUE in Google Sheets\n")
         return
 
-    print(f"✅ Found {len(subscribers)} total subscriber(s)\n")
+    print(f"✅ Found {len(subscribers)} ACTIVE subscriber(s)\n")
 
     sent_count = 0
     skipped_count = 0
@@ -255,11 +289,14 @@ def main():
         print(f"   📍 {location}")
         print(f"{'='*60}")
 
-        # Check time (disabled for testing)
-        if not is_7am_local_time(lat, lon, last_sent):
+        # Skip time check if in test mode
+        if not TEST_MODE and not is_7am_local_time(lat, lon, last_sent):
             print(f"   ⏭️  Skipping - not 7 AM local or already sent today\n")
             skipped_count += 1
             continue
+        
+        if TEST_MODE:
+            print(f"   🧪 TEST MODE - Sending immediately (bypassing time check)")
 
         try:
             # Fetch weather - REQUIRED (with retries)
@@ -270,7 +307,7 @@ def main():
                 print("      ❌ Weather fetch failed after retries - skipping subscriber")
                 failed_count += 1
                 time.sleep(2)
-                continue  # Skip to next subscriber
+                continue
             
             print("      ✓ Weather data received")
             time.sleep(1)
@@ -317,6 +354,10 @@ def main():
     print(f"   ⏭️  Skipped: {skipped_count}")
     print(f"   ❌ Failed: {failed_count}")
     print(f"   📧 Total: {len(subscribers)}")
+    
+    if TEST_MODE:
+        print(f"\n🧪 TEST MODE was enabled - emails sent immediately")
+    
     print("="*70 + "\n")
 
 

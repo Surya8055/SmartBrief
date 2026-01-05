@@ -4,38 +4,70 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>SmartBrief – Unsubscribe</title>
-
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css">
 </head>
-
 <body>
 
 <section class="hero">
   <div class="hero-left">
     <h1>👋 Sorry to see you go</h1>
-    <p>Enter your email to stop receiving SmartBrief emails.</p>
-
+    <p>Enter your email below to stop receiving SmartBrief morning briefings.</p>
+    
     <form id="unsubscribeForm" class="subscribe-form">
-      <input type="email" id="emailInput" placeholder="Enter your email" required>
+      <input 
+        type="email" 
+        id="emailInput" 
+        placeholder="Enter your email" 
+        required
+      >
       <button type="submit" class="btn-secondary">Unsubscribe</button>
     </form>
-
+    
     <p id="message" class="message"></p>
   </div>
-
+  
   <div class="hero-right">
-    <img src="images/morning-hero.png" alt="Morning Illustration">
+    <div style="font-size: 120px; text-align: center;">📭</div>
   </div>
 </section>
 
 <footer>
   <p>
-    SmartBrief – Energize your mornings ✨ |
+    SmartBrief – Wake up informed ✨ |
     <a href="index.html" class="footer-link">Subscribe again</a>
   </p>
 </footer>
 
 <script src="script.js"></script>
+<script>
+  // Auto-fill email from URL parameter (from email unsubscribe link)
+  window.addEventListener('DOMContentLoaded', () => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const email = urlParams.get('email');
+    
+    if (email) {
+      const emailInput = document.getElementById('emailInput');
+      if (emailInput) {
+        // Pre-fill the email
+        emailInput.value = decodeURIComponent(email);
+        
+        // Show a friendly message
+        const messageDiv = document.getElementById('message');
+        if (messageDiv) {
+          messageDiv.textContent = '📧 Email pre-filled from your subscription. Click "Unsubscribe" to confirm.';
+          messageDiv.className = 'message';
+          messageDiv.style.display = 'block';
+          messageDiv.style.background = '#eff6ff';
+          messageDiv.style.color = '#1e40af';
+          messageDiv.style.border = '1px solid #dbeafe';
+          messageDiv.style.padding = '12px';
+          messageDiv.style.borderRadius = '8px';
+        }
+      }
+    }
+  });
+</script>
+
 </body>
 </html>
