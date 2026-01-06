@@ -44,9 +44,17 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 4.5rem;
-      background: linear-gradient(135deg, rgba(20, 184, 166, 0.1), rgba(255, 107, 107, 0.1));
+      background: linear-gradient(135deg, rgba(255, 107, 107, 0.1), rgba(251, 113, 133, 0.1));
       border-radius: 50%;
+    }
+    
+    .unsubscribe-icon svg {
+      animation: iconRotate 3s ease-in-out infinite;
+    }
+    
+    @keyframes iconRotate {
+      0%, 100% { transform: rotate(0deg); }
+      50% { transform: rotate(90deg); }
     }
     
     .unsubscribe-title {
@@ -205,7 +213,13 @@
   <!-- Unsubscribe Section -->
   <section class="unsubscribe-section">
     <div class="unsubscribe-container">
-      <div class="unsubscribe-icon">😢</div>
+      <div class="unsubscribe-icon">
+        <svg width="80" height="80" viewBox="0 0 80 80" fill="none">
+          <circle cx="40" cy="40" r="35" stroke="#FF6B6B" stroke-width="3" opacity="0.3"/>
+          <circle cx="40" cy="40" r="25" stroke="#FF6B6B" stroke-width="2" opacity="0.5"/>
+          <path d="M30 40L50 40M40 30L40 50" stroke="#FF6B6B" stroke-width="4" stroke-linecap="round"/>
+        </svg>
+      </div>
 
       <h1 class="unsubscribe-title">We're Sorry to See You Go</h1>
       <p class="unsubscribe-subtitle">
@@ -289,7 +303,7 @@
       
       <div class="footer-bottom">
         <p class="footer-text">
-          © 2025 SmartBrief. Made with ❤️ for staying informed
+          © 2026 SmartBrief. Made with ❤️ for staying informed
         </p>
       </div>
     </div>

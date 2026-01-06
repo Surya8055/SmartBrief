@@ -9,7 +9,13 @@ from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 import time
 import sys
+import re
 from read_sheets import get_subscribers_from_sheets
+
+# Suppress warnings
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
+import warnings
+warnings.filterwarnings('ignore')
 
 # Load environment variables
 load_dotenv()
@@ -29,9 +35,8 @@ model = genai.GenerativeModel("gemini-2.5-flash")
 
 tf = TimezoneFinder()
 
-
 # ----------------------------
-# TIME CHECK: Is it 7-8 AM local?
+# TIME CHECK
 # ----------------------------
 def is_7am_local_time(lat, lon, last_sent_date):
     """Check if it's 7-8 AM in subscriber's local timezone"""
@@ -39,28 +44,25 @@ def is_7am_local_time(lat, lon, last_sent_date):
         tz_name = tf.timezone_at(lat=lat, lng=lon)
         if not tz_name:
             return False
-
+        
         local_tz = pytz.timezone(tz_name)
         local_time = datetime.now(pytz.utc).astimezone(local_tz)
         today_str = local_time.strftime("%Y-%m-%d")
         
-        # Only send once per day
         if last_sent_date == today_str:
             return False
         
-        # Check if 7-8 AM (hour == 7)
         return local_time.hour == 7
         
     except Exception as e:
         print(f"      ⚠️ Time check error: {e}")
         return False
 
-
 # ----------------------------
-# FETCH WEATHER WITH RETRY
+# FETCH WEATHER
 # ----------------------------
 def fetch_weather(lat, lon, max_retries=3):
-    """Fetch weather with retry logic - returns None if all retries fail"""
+    """Fetch weather with retry logic"""
     for attempt in range(max_retries):
         try:
             url = (
@@ -74,292 +76,331 @@ def fetch_weather(lat, lon, max_retries=3):
             )
             
             if attempt > 0:
-                print(f"         ⏳ Retry attempt {attempt}/{max_retries-1}...")
+                print(f"         ⏳ Retry {attempt}/{max_retries-1}...")
             
             response = requests.get(url, timeout=15)
             data = response.json()
+            
             current = data.get("current_weather", {})
             daily = data.get("daily", {})
-
+            
             feels_like = (
                 daily.get("apparent_temperature_max", [current.get("temperature")])[0] +
                 daily.get("apparent_temperature_min", [current.get("temperature")])[0]
             ) / 2
-
+            
             return {
-                "temp": current.get("temperature", 0),
-                "windspeed": current.get("windspeed", 0),
-                "winddir": current.get("winddirection", 0),
                 "max": daily.get("temperature_2m_max", [0])[0],
                 "min": daily.get("temperature_2m_min", [0])[0],
                 "feels_like": round(feels_like, 1),
                 "sunrise": daily.get("sunrise", ["06:00"])[0].split("T")[1],
                 "sunset": daily.get("sunset", ["18:00"])[0].split("T")[1],
-                "cloudcover": daily.get("cloudcover_mean", [0])[0],
-                "precipitation": daily.get("precipitation_sum", [0])[0],
                 "uv_index": daily.get("uv_index_max", [0])[0]
             }
             
         except Exception as e:
             if attempt < max_retries - 1:
-                print(f"         ⚠️ Attempt {attempt+1} failed: {str(e)[:50]}...")
                 time.sleep(2)
                 continue
             else:
-                print(f"         ❌ All {max_retries} attempts failed")
+                print(f"         ❌ Weather failed")
                 return None
     
     return None
 
-
 # ----------------------------
-# FETCH NEWS
+# FETCH WORLDWIDE NEWS
 # ----------------------------
-def fetch_news(country="us", max_articles=5):
-    """Fetch top news headlines"""
+def fetch_news(max_articles=10):
+    """Fetch worldwide news headlines"""
     try:
-        url = f"https://newsapi.org/v2/top-headlines?country={country}&pageSize={max_articles}&apiKey={NEWS_API_KEY}"
+        url = f"https://newsapi.org/v2/top-headlines?language=en&pageSize={max_articles}&apiKey={NEWS_API_KEY}"
         response = requests.get(url, timeout=10)
         data = response.json()
+        
         articles = data.get("articles", [])
         news_list = []
+        
         for a in articles:
-            if a.get("title") and a.get("description"):
-                news_list.append(f"{a['title']} - {a['description']}")
-        return news_list or ["No major news today."]
+            if a.get("title") and a.get("description") and a.get("url"):
+                news_list.append({
+                    "title": a['title'],
+                    "description": a['description'],
+                    "url": a['url']
+                })
+        
+        return news_list[:5] if news_list else [{"title": "No news", "description": "", "url": ""}]
+        
     except Exception as e:
-        print(f"         ⚠️ News API failed: {e}")
-        return ["No news available at this time."]
+        print(f"         ⚠️ News failed: {e}")
+        return [{"title": "No news", "description": "", "url": ""}]
 
+# ----------------------------
+# CLEAN HTML
+# ----------------------------
+def clean_html_response(text):
+    """Remove markdown from AI response"""
+    text = re.sub(r'```html\n?', '', text)
+    text = re.sub(r'```\n?', '', text)
+    text = text.strip()
+    text = re.sub(r'<!DOCTYPE html>.*?<body[^>]*>', '', text, flags=re.DOTALL | re.IGNORECASE)
+    text = re.sub(r'</body>.*?</html>', '', text, flags=re.DOTALL | re.IGNORECASE)
+    return text
 
 # ----------------------------
 # AI MESSAGE
 # ----------------------------
 def ai_message(weather, location, news_list):
-    """Generate AI morning message"""
-    today = datetime.now().strftime("%A, %d %B %Y")
-    news_text = "\n".join(news_list[:5])
+    """Generate brief"""
+    today = datetime.now().strftime("%A, %B %d, %Y")
+    
+    news_text = ""
+    for i, a in enumerate(news_list[:5], 1):
+        news_text += f"{i}. {a['title']}\n{a['description'][:120]}\nURL: {a['url']}\n\n"
+    
+    prompt = f"""Email for {location}, {today}. NO markdown, ONLY HTML:
 
-    prompt = f"""
-Create a friendly Good Morning email without Subject for {location} on {today}.
+<h2 style="color:#0F172A;margin:0 0 10px 0;font-size:1.75rem;font-weight:700">Hello! 👋</h2>
+<p style="color:#334155;font-size:1rem;margin:0 0 32px 0">{today} • {location}</p>
 
-1. Weather Snapshot (HTML bullet points):
-   - Min: {weather['min']}°C
-   - Max: {weather['max']}°C
-   - Feels Like: {weather['feels_like']}°C
-   - Sunrise: {weather['sunrise']}
-   - Sunset: {weather['sunset']}
+<div style="background:#ECFDF5;padding:28px;border-radius:16px;margin-bottom:28px;border-left:5px solid #14B8A6">
+<h3 style="color:#0D9488;font-size:1.2rem;margin:0 0 16px 0;font-weight:700">🌤️ Weather</h3>
+<div style="margin-bottom:14px">
+<span style="font-size:1rem;color:#0F172A;margin-right:20px"><strong>High:</strong> {weather['max']}°C</span>
+<span style="font-size:1rem;color:#0F172A;margin-right:20px"><strong>Low:</strong> {weather['min']}°C</span>
+<span style="font-size:1rem;color:#0F172A;margin-right:20px"><strong>Feels:</strong> {weather['feels_like']}°C</span>
+<span style="font-size:1rem;color:#0F172A"><strong>UV:</strong> {weather['uv_index']}</span>
+</div>
+<p style="font-size:1rem;color:#1E293B;line-height:1.7;margin:0 0 12px 0">[1-2 helpful sentences]</p>
+<p style="font-size:0.9rem;color:#334155;margin:0">☀️ {weather['sunrise']} • 🌙 {weather['sunset']}</p>
+</div>
 
-2. Brief weather summary (2-3 lines)
+<div style="background:#ffffff;padding:28px;border-radius:16px;border-left:5px solid #EF4444;box-shadow:0 4px 12px rgba(0,0,0,0.06)">
+<h3 style="color:#DC2626;font-size:1.2rem;margin:0 0 20px 0;font-weight:700">📰 Top 5 News • TLDR</h3>
 
-3. Top News (HTML bullet points, 1-2 sentences each):
+[5 items:]
+<div style="margin-bottom:18px;padding-bottom:18px;border-bottom:1px solid #E2E8F0">
+<p style="font-weight:700;margin:0 0 8px 0;font-size:1rem;color:#0F172A;line-height:1.5">[Headline]</p>
+<p style="font-size:0.95rem;color:#334155;margin:0 0 10px 0;line-height:1.6">[TLDR]</p>
+<a href="[URL]" style="color:#0D9488;font-size:0.9rem;text-decoration:none;font-weight:600">Read more →</a>
+</div>
+
+NEWS:
 {news_text}
 
-Use HTML tags. Keep it concise and cheerful.
+Remove border from #5.
+</div>
+
+<p style="text-align:center;color:#334155;font-size:1rem;margin:24px 0 0 0;font-weight:600">Have a great day! 🚀</p>
+
+Natural. All 5 + URLs."""
+    
+    try:
+        print("         🤖 Generating...")
+        response = model.generate_content(prompt)
+        content = clean_html_response(response.text)
+        print("         ✓ Ready")
+        return content
+        
+    except Exception as e:
+        print(f"         ⚠️ Failed")
+        
+        news_html = ''
+        for idx, article in enumerate(news_list[:5]):
+            border = '' if idx == 4 else 'border-bottom:1px solid #E2E8F0;'
+            news_html += f"""
+<div style="margin-bottom:18px;padding-bottom:18px;{border}">
+<p style="font-weight:700;margin:0 0 8px 0;font-size:1rem;color:#0F172A;line-height:1.5">{article['title'][:120]}</p>
+<p style="font-size:0.95rem;color:#334155;margin:0 0 10px 0;line-height:1.6">{article['description'][:180] if article['description'] else 'Full story available.'}</p>
+<a href="{article['url']}" style="color:#0D9488;font-size:0.9rem;text-decoration:none;font-weight:600">Read more →</a>
+</div>
+"""
+        
+        return f"""
+<h2 style="color:#0F172A;margin:0 0 10px 0;font-size:1.75rem;font-weight:700">Hello! 👋</h2>
+<p style="color:#334155;font-size:1rem;margin:0 0 32px 0">{today} • {location}</p>
+
+<div style="background:#ECFDF5;padding:28px;border-radius:16px;margin-bottom:28px;border-left:5px solid #14B8A6">
+<h3 style="color:#0D9488;font-size:1.2rem;margin:0 0 16px 0;font-weight:700">🌤️ Weather</h3>
+<div style="margin-bottom:14px">
+<span style="font-size:1rem;color:#0F172A;margin-right:20px"><strong>High:</strong> {weather['max']}°C</span>
+<span style="font-size:1rem;color:#0F172A;margin-right:20px"><strong>Low:</strong> {weather['min']}°C</span>
+<span style="font-size:1rem;color:#0F172A;margin-right:20px"><strong>Feels:</strong> {weather['feels_like']}°C</span>
+<span style="font-size:1rem;color:#0F172A"><strong>UV:</strong> {weather['uv_index']}</span>
+</div>
+<p style="font-size:1rem;color:#1E293B;line-height:1.7;margin:0 0 12px 0">Temperature from {weather['min']}°C to {weather['max']}°C. Conditions look good.</p>
+<p style="font-size:0.9rem;color:#334155;margin:0">☀️ {weather['sunrise']} • 🌙 {weather['sunset']}</p>
+</div>
+
+<div style="background:#ffffff;padding:28px;border-radius:16px;border-left:5px solid #EF4444;box-shadow:0 4px 12px rgba(0,0,0,0.06)">
+<h3 style="color:#DC2626;font-size:1.2rem;margin:0 0 20px 0;font-weight:700">📰 Top 5 News • TLDR</h3>
+{news_html}
+</div>
+
+<p style="text-align:center;color:#334155;font-size:1rem;margin:24px 0 0 0;font-weight:600">Have a great day! 🚀</p>
 """
 
-    try:
-        print("         🤖 Generating AI content...")
-        response = model.generate_content(prompt)
-        print("         ✓ AI content ready")
-        return response.text
-    except Exception as e:
-        print(f"         ⚠️ AI generation failed: {e}")
-        news_html = ''.join([f'<li>{n[:150]}...</li>' for n in news_list[:5]])
-        return f"""
-        <h2>Good Morning! ☀️</h2>
-        <p>Here's your briefing for <b>{location}</b> on {today}.</p>
-        
-        <h3>🌤️ Weather</h3>
-        <ul>
-            <li><b>Min:</b> {weather['min']}°C</li>
-            <li><b>Max:</b> {weather['max']}°C</li>
-            <li><b>Feels Like:</b> {weather['feels_like']}°C</li>
-            <li><b>Sunrise:</b> {weather['sunrise']}</li>
-            <li><b>Sunset:</b> {weather['sunset']}</li>
-        </ul>
-        
-        <h3>📰 Top News</h3>
-        <ul>{news_html}</ul>
-        """
-
-
 # ----------------------------
-# SEND EMAIL WITH UNSUBSCRIBE LINK
+# SEND EMAIL - DARK MODE FIX
 # ----------------------------
 def send_email(to_email, subject, html_content):
-    """Send email to subscriber with personalized unsubscribe link"""
+    """Send email with high contrast for dark mode"""
     try:
         msg = MIMEMultipart("alternative")
         msg["From"] = SENDER_EMAIL
         msg["To"] = to_email
         msg["Subject"] = subject
-
-        # Personalized unsubscribe link with email pre-filled
+        
         from urllib.parse import quote
         unsubscribe_url = f"https://surya8055.github.io/SmartBrief/unsubscribe.html?email={quote(to_email)}"
-
+        
+        # Using much darker colors that show up in dark mode
         full_html = f"""
-        <html>
-        <body style="font-family: 'Segoe UI', Arial, sans-serif; background:#f8fafc; padding:20px;">
-          <div style="max-width:600px;margin:auto;background:white;border-radius:16px;overflow:hidden;box-shadow:0 4px 6px rgba(0,0,0,0.05);border:1px solid #e2e8f0;">
-            
-            <!-- Header -->
-            <div style="background:linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);color:white;padding:30px;text-align:center;">
-              <h1 style="margin:0;font-size:2.2rem;font-weight:600;">☀️ SmartBrief</h1>
-              <p style="margin:8px 0 0;opacity:0.95;font-size:1rem;">Your AI Morning Briefing</p>
-            </div>
-            
-            <!-- Content -->
-            <div style="padding:35px;color:#1e293b;line-height:1.7;">
-              {html_content}
-            </div>
-            
-            <!-- Footer with Unsubscribe -->
-            <div style="background:#f8fafc;padding:25px;text-align:center;border-top:1px solid #e2e8f0;">
-              <p style="margin:0;color:#64748b;font-size:13px;font-weight:500;">
-                Powered by Google Gemini AI
-              </p>
-              
-              <div style="margin-top:18px;padding-top:18px;border-top:1px solid #e2e8f0;">
-                <p style="margin:0;color:#94a3b8;font-size:12px;line-height:1.6;">
-                  Not interested anymore? 
-                  <a href="{unsubscribe_url}" 
-                     style="color:#3b82f6;text-decoration:none;font-weight:600;">
-                    Click here to unsubscribe
-                  </a>
-                </p>
-              </div>
-              
-              <p style="margin:12px 0 0;color:#cbd5e1;font-size:11px;">
-                You're receiving this because you subscribed to SmartBrief at {to_email}
-              </p>
-            </div>
-            
-          </div>
-        </body>
-        </html>
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="color-scheme" content="light only">
+  <meta name="supported-color-schemes" content="light">
+  <style>
+    * {{ color-scheme: light only !important; }}
+    body {{ background-color: #F0FDFA !important; }}
+  </style>
+</head>
+<body style="margin:0;padding:0;font-family:'Segoe UI',Arial,sans-serif;background-color:#F0FDFA !important;padding:40px 20px">
+  
+  <div style="max-width:700px;margin:0 auto;background-color:#ffffff !important;border-radius:24px;overflow:hidden;box-shadow:0 10px 40px rgba(0,0,0,0.1);border:1px solid #14B8A6">
+    
+    <!-- Header -->
+    <div style="background:linear-gradient(135deg,#14B8A6 0%,#1E40AF 100%);padding:40px 36px;text-align:center">
+      <div style="margin-bottom:14px">
+        <div style="display:inline-block;width:56px;height:56px;background-color:#ffffff !important;border-radius:14px;line-height:56px;text-align:center">
+          <span style="font-family:'Segoe UI',Arial,sans-serif;font-weight:900;font-size:1.7rem;color:#14B8A6 !important">SB</span>
+        </div>
+      </div>
+      <h1 style="color:#ffffff !important;font-size:2rem;font-weight:800;margin:0 0 6px 0">SmartBrief</h1>
+      <p style="color:#ffffff !important;font-size:1.05rem;margin:0">Start Your Day Smart</p>
+    </div>
+    
+    <!-- Content -->
+    <div style="padding:40px 36px;background-color:#ffffff !important;color:#0F172A !important">
+      {html_content}
+    </div>
+    
+    <!-- Footer -->
+    <div style="background-color:#F8FAFC !important;padding:24px 36px;border-top:1px solid #CBD5E1;text-align:center">
+      <p style="color:#334155 !important;font-size:0.9rem;margin:0">
+        <a href="{unsubscribe_url}" style="color:#0D9488 !important;text-decoration:none;font-weight:600">Unsubscribe</a> • © 2026 SmartBrief
+      </p>
+    </div>
+    
+  </div>
+  
+</body>
+</html>
         """
-
+        
         msg.attach(MIMEText(full_html, "html"))
-
+        
         with smtplib.SMTP_SSL("smtp.gmail.com", 465, timeout=15) as server:
             server.login(SENDER_EMAIL, SENDER_PASSWORD)
             server.sendmail(SENDER_EMAIL, to_email, msg.as_string())
         
         return True
+        
     except Exception as e:
-        print(f"         ❌ Email send failed: {e}")
+        print(f"         ❌ Send failed: {e}")
         return False
-
 
 # ----------------------------
 # MAIN
 # ----------------------------
 def main():
     print("\n" + "="*70)
-    print(f"🚀 SmartBrief Time-Based Distribution")
+    print(f"🚀 SmartBrief Distribution")
     
     if TEST_MODE:
-        print(f"🧪 TEST MODE ENABLED - Sending to all active subscribers NOW")
+        print(f"🧪 TEST MODE")
     
-    print(f"⏰ UTC Time: {datetime.now(pytz.utc).strftime('%Y-%m-%d %H:%M:%S %Z')}")
+    print(f"⏰ {datetime.now(pytz.utc).strftime('%Y-%m-%d %H:%M:%S %Z')}")
     print("="*70 + "\n")
     
-    # Read from Google Sheets
-    print("📊 Reading active subscribers from Google Sheets...")
+    print("📊 Reading subscribers...")
     subscribers = get_subscribers_from_sheets()
     
     if not subscribers:
-        print("⚠️  No active subscribers found!")
-        print("💡 Make sure subscribers have is_active = TRUE in Google Sheets\n")
+        print("⚠️  No active subscribers\n")
         return
-
-    print(f"✅ Found {len(subscribers)} ACTIVE subscriber(s)\n")
-
+    
+    print(f"✅ Found {len(subscribers)} subscriber(s)\n")
+    
     sent_count = 0
     skipped_count = 0
     failed_count = 0
-
+    
     for idx, sub in enumerate(subscribers, 1):
         row_id, email, lat, lon, location, subscribed_at, last_sent = sub
         
         print(f"\n{'='*60}")
-        # print(f"📧 [{idx}/{len(subscribers)}] {email}")
-        print(f"   📍 {location}")
+        print(f"📧 [{idx}/{len(subscribers)}] {location}")
         print(f"{'='*60}")
-
-        # Skip time check if in test mode
+        
         if not TEST_MODE and not is_7am_local_time(lat, lon, last_sent):
-            print(f"   ⏭️  Skipping - not 7 AM local or already sent today\n")
+            print(f"   ⏭️  Skipping\n")
             skipped_count += 1
             continue
         
         if TEST_MODE:
-            print(f"   🧪 TEST MODE - Sending immediately (bypassing time check)")
-
+            print(f"   🧪 TEST MODE")
+        
         try:
-            # Fetch weather - REQUIRED (with retries)
-            print("   🌤️  Step 1/4: Fetching weather...")
+            print("   🌤️  Weather...")
             weather = fetch_weather(lat, lon, max_retries=3)
             
             if not weather:
-                print("      ❌ Weather fetch failed after retries - skipping subscriber")
                 failed_count += 1
                 time.sleep(2)
                 continue
             
-            print("      ✓ Weather data received")
+            print("      ✓ Done")
             time.sleep(1)
             
-            # Fetch news
-            print("   📰 Step 2/4: Fetching news...")
-            news = fetch_news("us")
-            print(f"      ✓ {len(news)} articles fetched")
+            print("   📰 News...")
+            news = fetch_news()
+            print(f"      ✓ {len(news)} articles")
             time.sleep(1)
             
-            # Generate AI message
-            print("   🤖 Step 3/4: Generating AI digest...")
+            print("   ✨ Generating...")
             message = ai_message(weather, location, news)
-            print("      ✓ Digest generated")
+            print("      ✓ Done")
             time.sleep(2)
             
-            # Send email
-            print("   📤 Step 4/4: Sending email...")
-            today = datetime.now().strftime("%A, %B %d, %Y")
-            subject = f"☀️ SmartBrief Morning - {today}"
+            print("   📤 Sending...")
+            today_subject = datetime.now().strftime("%A, %B %d, %Y")
+            subject = f"Your SmartBrief for {today_subject}"
             
             if send_email(email, subject, message):
-                print("      ✓ Email sent successfully!")
+                print("      ✓ Sent!")
                 sent_count += 1
-                # print(f"   ✅ SUCCESS for {email}")
             else:
                 failed_count += 1
-                # print(f"   ❌ Email delivery failed")
             
-            # Wait before next subscriber
             if idx < len(subscribers):
-                print(f"   ⏳ Waiting 3 seconds...")
+                print(f"   ⏳ Wait 3s...")
                 time.sleep(3)
             
         except Exception as e:
             failed_count += 1
             print(f"   ❌ FAILED: {e}")
             time.sleep(2)
-            continue
-
+    
     print("\n" + "="*70)
-    print(f"📊 Distribution Summary:")
+    print(f"📊 Summary:")
     print(f"   ✅ Sent: {sent_count}")
     print(f"   ⏭️  Skipped: {skipped_count}")
     print(f"   ❌ Failed: {failed_count}")
-    print(f"   📧 Total: {len(subscribers)}")
-    
-    if TEST_MODE:
-        print(f"\n🧪 TEST MODE was enabled - emails sent immediately")
-    
     print("="*70 + "\n")
-
 
 if __name__ == "__main__":
     main()
