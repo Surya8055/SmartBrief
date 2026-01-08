@@ -7,9 +7,9 @@
 
 SmartBrief is a sophisticated automation pipeline that transforms atmospheric data, global news, and philosophical insights into a concise, localized daily briefing. This document provides a granular, block-by-block breakdown of the entire system architecture, logic, and security protocols.
 
-### 🛠 Technology Landscape
+### ✨ Technology Landscape
 <p align="center">
-  <img src="https://quickchart.io/chart?c={type:'doughnut',data:{labels:['Python','HTML/CSS','JS','Sheets','JSON'],datasets:[{data:[45,25,15,10,5],backgroundColor:['%230ea5e9','%236366f1','%23f43f5e','%2310b981','%23f59e0b']}]},options:{plugins:{datalabels:{color:'white',font:{weight:'bold'}}},donutText:{title:'Stack',subtitle:'SmartBrief',colors:{title:'%23ffffff',subtitle:'%2394a3b8'}}}}" width="400" />
+  <img src="https://quickchart.io/chart?c={type:'doughnut',data:{labels:['Python','HTML/CSS','JS','Sheets','JSON'],datasets:[{data:[45,25,15,10,5],backgroundColor:['%231E40AF','%2314B8A6','%23FF6B6B','%23F59E0B','%236EE7B7']}]},options:{plugins:{datalabels:{color:'white',font:{weight:'bold'}}},donutText:{title:'Stack',subtitle:'SmartBrief',colors:{title:'%23ffffff',subtitle:'%2394a3b8'}}}}" width="400" />
   <br>
   <a href="dashboard.html"><b>Explore 100% Interactive Dashboard →</b></a>
 </p>
