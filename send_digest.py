@@ -230,14 +230,12 @@ def ai_message(weather, location, news_list, quote):
 <div style="background:#ffffff;padding:28px;border-radius:16px;border-left:5px solid #EF4444;box-shadow:0 4px 12px rgba(0,0,0,0.06)">
 <h3 style="color:#DC2626;font-size:1.2rem;margin:0 0 20px 0;font-weight:700">📰 Top 5 News • TLDR</h3>
 
-[5 items:]
+[For each news item above, generate this block:]
 <div style="margin-bottom:18px;padding-bottom:18px;border-bottom:1px solid #E2E8F0">
 <p style="font-weight:700;margin:0 0 8px 0;font-size:1rem;color:#0F172A;line-height:1.5">[Headline]</p>
 <p style="font-size:0.95rem;color:#334155;margin:0 0 10px 0;line-height:1.6">[TLDR]</p>
-<a href="[URL]" style="color:#0D9488;font-size:0.9rem;text-decoration:none;font-weight:600">Read more →</a>
+<a href="[Insert EXACT URL from input here]" style="color:#0D9488;font-size:0.9rem;text-decoration:none;font-weight:600">Read more →</a>
 </div>
-
-IMPORTANT: You must replace [URL] with the actual URL provided in the input for that specific article. Do not leave it as [URL]. Do not hallucinate links.
 
 NEWS:
 {news_text}
@@ -253,14 +251,6 @@ Natural. All 5 + URLs."""
         print("         🤖 Generating...")
         response = model.generate_content(prompt)
         content = clean_html_response(response.text)
-        print("         ℹ️ DEBUG HTML SNIPPET:")
-        print(content[:500]) # First 500 chars to check header
-        # Check for first link
-        match = re.search(r'href="(http[^"]+)"', content)
-        if match:
-             print(f"         ℹ️ Found link: {match.group(1)}")
-        else:
-             print(f"         ⚠️ No http link found in content snippet or bad format")
         print("         ✓ Ready")
         return content
         
@@ -371,15 +361,8 @@ def send_email(to_email, subject, html_content):
         msg.attach(MIMEText(full_html, "html"))
         
         with smtplib.SMTP_SSL("smtp.gmail.com", 465, timeout=15) as server:
-            server.set_debuglevel(1)  # Enable debug output
             server.login(SENDER_EMAIL, SENDER_PASSWORD)
-            failed = server.sendmail(SENDER_EMAIL, to_email, msg.as_string())
-            
-            if failed:
-                print(f"         ⚠️ SMTP Failed recipients: {failed}")
-                return False
-            else:
-                print(f"         ✅ SMTP Accepted message")
+            server.sendmail(SENDER_EMAIL, to_email, msg.as_string())
         
         return True
         
@@ -393,7 +376,6 @@ def send_email(to_email, subject, html_content):
 def main():
     print("\n" + "="*70)
     print(f"🚀 SmartBrief Distribution")
-    print(f"   From: {SENDER_EMAIL}")
     
     if TEST_MODE:
         print(f"🧪 TEST MODE")
@@ -418,7 +400,7 @@ def main():
         row_id, email, lat, lon, location, subscribed_at, last_sent = sub
         
         print(f"\n{'='*60}")
-        print(f"📧 [{idx}/{len(subscribers)}] {location} ({email})")
+        print(f"📧 [{idx}/{len(subscribers)}] {location}")
         print(f"{'='*60}")
         
         if not TEST_MODE and not is_7am_local_time(lat, lon, last_sent):
