@@ -111,11 +111,40 @@ def fetch_weather(lat, lon, max_retries=3):
 # ----------------------------
 # FETCH WORLDWIDE NEWS
 # ----------------------------
-def fetch_news(max_articles=10):
-    """Fetch worldwide news headlines"""
+def fetch_news(location=None, max_articles=10):
+    """Fetch news headlines, localized if possible"""
     try:
-        url = f"https://newsapi.org/v2/top-headlines?language=en&pageSize={max_articles}&apiKey={NEWS_API_KEY}"
-        response = requests.get(url, timeout=10)
+        # Default fallback
+        params = {
+            "language": "en",
+            "pageSize": max_articles,
+            "apiKey": NEWS_API_KEY
+        }
+        
+        country_map = {
+            "united states": "us", "usa": "us", "us": "us",
+            "india": "in", "uk": "gb", "united kingdom": "gb",
+            "australia": "au", "canada": "ca", "germany": "de",
+            "france": "fr", "italy": "it", "japan": "jp",
+            "china": "cn", "brazil": "br"
+        }
+        
+        if location:
+            # Simple heuristic: extract the last part of "City, Country"
+            parts = location.split(',')
+            if len(parts) > 1:
+                country_name = parts[-1].strip().lower()
+                # Check known mappings
+                if country_name in country_map:
+                    params["country"] = country_map[country_name]
+                else:
+                    # Fallback to query if no code match
+                    params["q"] = country_name
+        
+        if "country" not in params and "q" not in params:
+            params["category"] = "general" # Worldwide top headlines
+
+        response = requests.get("https://newsapi.org/v2/top-headlines", params=params, timeout=10)
         data = response.json()
         
         articles = data.get("articles", [])
@@ -136,6 +165,24 @@ def fetch_news(max_articles=10):
         return [{"title": "No news", "description": "", "url": ""}]
 
 # ----------------------------
+# FETCH QUOTE
+# ----------------------------
+def fetch_quote():
+    """Fetch daily quote from ZenQuotes"""
+    try:
+        response = requests.get("https://zenquotes.io/api/today", timeout=10)
+        data = response.json()
+        if data and isinstance(data, list) and len(data) > 0:
+            return {
+                "q": data[0].get("q", "No quote today"),
+                "a": data[0].get("a", "Unknown")
+            }
+        return {"q": "The best way to predict the future is to create it.", "a": "Peter Drucker"}
+    except Exception as e:
+        print(f"         ⚠️ Quote failed: {e}")
+        return {"q": "The best way to predict the future is to create it.", "a": "Peter Drucker"}
+
+# ----------------------------
 # CLEAN HTML
 # ----------------------------
 def clean_html_response(text):
@@ -150,7 +197,7 @@ def clean_html_response(text):
 # ----------------------------
 # AI MESSAGE
 # ----------------------------
-def ai_message(weather, location, news_list):
+def ai_message(weather, location, news_list, quote):
     """Generate brief"""
     today = datetime.now().strftime("%A, %B %d, %Y")
     
@@ -162,6 +209,11 @@ def ai_message(weather, location, news_list):
 
 <h2 style="color:#0F172A;margin:0 0 10px 0;font-size:1.75rem;font-weight:700">Hello! 👋</h2>
 <p style="color:#334155;font-size:1rem;margin:0 0 32px 0">{today} • {location}</p>
+
+<div style="margin-bottom:28px;padding:20px;background:#F8FAFC;border-radius:12px;border-left:4px solid #6366F1">
+<p style="font-size:1.1rem;font-style:italic;color:#1E293B;margin:0 0 8px 0">"{quote['q']}"</p>
+<p style="font-size:0.9rem;color:#64748B;margin:0;font-weight:600">— {quote['a']}</p>
+</div>
 
 <div style="background:#ECFDF5;padding:28px;border-radius:16px;margin-bottom:28px;border-left:5px solid #14B8A6">
 <h3 style="color:#0D9488;font-size:1.2rem;margin:0 0 16px 0;font-weight:700">🌤️ Weather</h3>
@@ -219,6 +271,11 @@ Natural. All 5 + URLs."""
         return f"""
 <h2 style="color:#0F172A;margin:0 0 10px 0;font-size:1.75rem;font-weight:700">Hello! 👋</h2>
 <p style="color:#334155;font-size:1rem;margin:0 0 32px 0">{today} • {location}</p>
+
+<div style="margin-bottom:28px;padding:20px;background:#F8FAFC;border-radius:12px;border-left:4px solid #6366F1">
+<p style="font-size:1.1rem;font-style:italic;color:#1E293B;margin:0 0 8px 0">"{quote['q']}"</p>
+<p style="font-size:0.9rem;color:#64748B;margin:0;font-weight:600">— {quote['a']}</p>
+</div>
 
 <div style="background:#ECFDF5;padding:28px;border-radius:16px;margin-bottom:28px;border-left:5px solid #14B8A6">
 <h3 style="color:#0D9488;font-size:1.2rem;margin:0 0 16px 0;font-weight:700">🌤️ Weather</h3>
@@ -367,12 +424,17 @@ def main():
             time.sleep(1)
             
             print("   📰 News...")
-            news = fetch_news()
+            news = fetch_news(location)
             print(f"      ✓ {len(news)} articles")
+            time.sleep(1)
+
+            print("   💬 Quote...")
+            quote = fetch_quote()
+            print(f"      ✓ {quote['a']}")
             time.sleep(1)
             
             print("   ✨ Generating...")
-            message = ai_message(weather, location, news)
+            message = ai_message(weather, location, news, quote)
             print("      ✓ Done")
             time.sleep(2)
             
