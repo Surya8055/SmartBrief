@@ -130,17 +130,6 @@ if len(news_list) < max_articles:
 ```
 This ensures every user gets a full 5-article experience, prioritized by local relevance.
 
-### Secure Email Handshake (SMTP SSL)
-Most projects use simple TLS. We prioritize security by using implicit SSL from the first byte of communication. This is crucial when sending weather and location-based data.
-
-```python
-# From send_digest.py -> send_email()
-with smtplib.SMTP_SSL("smtp.gmail.com", 465, context=context) as server:
-    server.login(SENDER_EMAIL, SENDER_PASSWORD)
-    server.send_message(msg)
-```
-*Why Port 465 over 587?* Port 465 (SSL) is inherently more secure because the connection is encrypted **before** any protocol commands are sent, protecting your credentials even from sophisticated packet sniffers.
-
 ### The "Once per City" Cache Optimization
 Instead of hitting the Gemini API for every single user, we check if we've already solved the "summarization problem" for that city today.
 
