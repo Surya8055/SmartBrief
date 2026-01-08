@@ -4,7 +4,7 @@ SmartBrief is a sophisticated automation pipeline that transforms atmospheric da
 
 ### 🛠 Technology Landscape
 <p align="center">
-  <img src="https://quickchart.io/chart?c={type:'doughnut',data:{labels:['Python','HTML/CSS','JS','Sheets','JSON'],datasets:[{data:[45,25,15,10,5],backgroundColor:['%2300fbff','%23ff00ff','%23ffeb3b','%2300ff00','%237e57c2']}]},options:{plugins:{datalabels:{color:'white',font:{weight:'bold'}}},donutText:{title:'Stack',subtitle:'SmartBrief',colors:{title:'%23ffffff',subtitle:'%2394a3b8'}}}}" width="400" />
+  <img src="https://quickchart.io/chart?c={type:'doughnut',data:{labels:['Python','HTML/CSS','JS','Sheets','JSON'],datasets:[{data:[45,25,15,10,5],backgroundColor:['%230ea5e9','%236366f1','%23f43f5e','%2310b981','%23f59e0b']}]},options:{plugins:{datalabels:{color:'white',font:{weight:'bold'}}},donutText:{title:'Stack',subtitle:'SmartBrief',colors:{title:'%23ffffff',subtitle:'%2394a3b8'}}}}" width="400" />
   <br>
   <a href="dashboard.html"><b>Explore 100% Interactive Dashboard →</b></a>
 </p>
