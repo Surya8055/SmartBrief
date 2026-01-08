@@ -1,5 +1,10 @@
 # SmartBrief: Technical Documentation & Deep Dive
 
+![Python Version](https://img.shields.io/badge/python-3.10%2B-blue?style=for-the-badge&logo=python)
+![License](https://img.shields.io/badge/license-MIT-green?style=for-the-badge)
+![Gemini AI](https://img.shields.io/badge/AI-Google%20Gemini-orange?style=for-the-badge)
+![NewsAPI](https://img.shields.io/badge/Data-NewsAPI-red?style=for-the-badge)
+
 SmartBrief is a sophisticated automation pipeline that transforms atmospheric data, global news, and philosophical insights into a concise, localized daily briefing. This document provides a granular, block-by-block breakdown of the entire system architecture, logic, and security protocols.
 
 ### 🛠 Technology Landscape
@@ -8,6 +13,11 @@ SmartBrief is a sophisticated automation pipeline that transforms atmospheric da
   <br>
   <a href="dashboard.html"><b>Explore 100% Interactive Dashboard →</b></a>
 </p>
+
+---
+
+> [!TIP]
+> **🚀 The Caching Advantage**: SmartBrief generates localized briefings once per city per day. If you have 100 users in the same city, only **1 Gemini API call** is made. This saves over 99% in operational costs!
 
 ---
 
@@ -165,5 +175,16 @@ This single block of logic saves roughly **90% of API costs** in high-density ar
     Create a `.env` file for your keys. This is critical—never commit this file!
 4.  **Launch**:
     Run `python send_digest.py` to start the distribution engine.
+
+---
+
+## 🗺 V2 Roadmap
+
+The project is continuously evolving. Here is what we're looking at next:
+- [x] **Multi-Recipient Support**: Deliver to a wide subscriber base via Google Sheets.
+- [ ] **Telegram/Discord Integration**: Get your brief directly on your favorite chat app.
+- [ ] **Weekly PDF Recaps**: A beautiful weekend summary of the week's most important news.
+- [ ] **Smart Filtering**: Choose specific topics (e.g., Tech, Finance, Sports) for your brief.
+- [ ] **Multi-Language Support**: AI-translated briefings for global accessibility.
 
 Enjoy a smarter way to stay informed! 🚀
