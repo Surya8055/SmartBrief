@@ -520,12 +520,18 @@ def main():
         
         try:
             # Check Cache for Location
-            cached_html = cache[today_str]["locations"].get(location)
+            message = None
+            cache_entry = cache[today_str]["locations"].get(location)
             
-            if cached_html:
-                print("   📦 Using cached digest...")
-                message = cached_html
-            else:
+            if cache_entry:
+                if isinstance(cache_entry, dict):
+                    print("   📦 Using cached digest (expanded)...")
+                    message = cache_entry.get("html")
+                else:
+                    print("   📦 Using cached digest (legacy string)...")
+                    message = cache_entry
+            
+            if not message:
                 # GENERATE NEW
                 print("   🌤️  Weather...")
                 weather = fetch_weather(lat, lon, max_retries=3)
@@ -544,10 +550,14 @@ def main():
                 message = ai_message(weather, location, news, quote)
                 print("      ✓ Done")
                 
-                # Save to cache
-                cache[today_str]["locations"][location] = message
+                # Save to cache (Expanded Format)
+                cache[today_str]["locations"][location] = {
+                    "html": message,
+                    "weather": weather,
+                    "news": news
+                }
                 save_cache(cache)
-                print("      ✓ Saved to cache")
+                print("      ✓ Saved to cache (with raw data)")
                 
                 time.sleep(2)
             
