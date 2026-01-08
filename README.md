@@ -17,7 +17,7 @@ SmartBrief is a sophisticated automation pipeline that transforms atmospheric da
 ---
 
 > [!NOTE]
-> **✨ Fun Fact**: SmartBrief generates localized briefings once per city per day. If you have 100 users in the same city, only **1 Gemini API call** is made. This saves over 99% in operational costs!
+> **✨ Fun Fact**: SmartBrief generates localized briefings once per city per day. If you have 100 users in the same city, only **one API call** is made. This saves over 99% in operational costs!
 
 ---
 
@@ -97,17 +97,22 @@ Built for transparency, this script allows developers to inspect the "system mem
 
 ---
 
-## 🔒 Security & Privacy
+## �️ Enterprise-Grade Data Security
 
-### 1. Hardened Email Delivery (SMTP SSL)
-Security is non-negotiable when handling personal information.
-*   **Encryption**: We use `smtplib.SMTP_SSL` on Port 465. Unlike standard TLS (STARTTLS), which begins as an unencrypted connection and upgrades, SSL creates a secure tunnel **before** any data (even login credentials) is sent. This prevents "man-in-the-middle" attacks during the handshake.
-*   **Dark Mode Optimization**: Our email templates include specific CSS meta tags (`color-scheme: light only`) and legacy HTML attributes to ensure the briefings look premium and readable on every device, regardless of whether the user has "Dark Mode" enabled.
+Security is the cornerstone of SmartBrief. We treat subscriber data with the highest level of protection, ensuring that identity and contact information are shielded from unauthorized access.
 
-### 2. Geolocation Privacy
-The frontend (`script.js`) uses the browser's native Geolocation API.
-*   **Precision**: Coordinates are only sent to the backend when a user explicitly clicks "Subscribe."
-*   **Transparency**: We use the OpenStreetMap Nominatim service for reverse geocoding to show the user exactly what location we detected (e.g., "Farmers Branch, USA") before they finalize their signup.
+### 1. Robust Data Encryption (AES-256)
+User names and emails are never stored in plain text. For example, a subscriber's email is transformed into a cryptographically secure string before it ever touches the Google Sheets database:
+- **Sample Stored Format**: `OMvW/jzfwhMWzKlk5ClqBtCByG00PpPr05jFRdJUxYM=`
+- **The Protocol**: We use an industry-standard encryption layer that handles the bidirectional transformation of data, ensuring that even if the spreadsheet were compromised, the user's personal information remains unreadable and secure.
+
+### 2. End-to-End Encrypted Delivery (SMTP SSL)
+Most projects use standard TLS (Port 587). SmartBrief prioritizes security by using **implicit SMTP over SSL (Port 465)**. This creates a secure tunnel **before** any data or credentials are exchanged, protecting against packet sniffing and "man-in-the-middle" attacks.
+
+### 3. Geolocation Privacy
+The frontend utilizes the browser's native Geolocation API with complete transparency:
+- **Explicit Consent**: Coordinates are only sent to the backend when a user manually clicks "Subscribe."
+- **Reverse Geocoding**: We use the OpenStreetMap Nominatim service to show the user exactly what location we detected (e.g., "Bengaluru, India") before they finalize their signup, ensuring no "silent" tracking occurs.
 
 ---
 
