@@ -111,15 +111,37 @@ def fetch_weather(lat, lon, max_retries=3):
 # ----------------------------
 # FETCH WORLDWIDE NEWS
 # ----------------------------
-def fetch_news(location=None, max_articles=10):
-    """Fetch news headlines, localized if possible"""
+def fetch_news(location=None, max_articles=5):
+    """Fetch news with a cascading strategy: City -> Country -> World to ensure 5 articles."""
+    news_list = []
+    seen_urls = set()
+
+    def add_articles(articles):
+        """Helper to add unique articles to the list."""
+        for a in articles:
+            if len(news_list) >= max_articles:
+                break
+            
+            title = a.get("title")
+            url = a.get("url")
+            desc = a.get("description")
+            
+            if title and url and url not in seen_urls:
+                # Basic validation
+                if title == "[Removed]" or not desc:
+                    continue
+                    
+                news_list.append({
+                    "title": title,
+                    "description": desc,
+                    "url": url
+                })
+                seen_urls.add(url)
+
     try:
-        # Default fallback
-        params = {
-            "language": "en",
-            "pageSize": max_articles,
-            "apiKey": NEWS_API_KEY
-        }
+        # 1. Parse Location
+        city = None
+        country_code = None
         
         country_map = {
             "united states": "us", "usa": "us", "us": "us",
@@ -128,41 +150,72 @@ def fetch_news(location=None, max_articles=10):
             "france": "fr", "italy": "it", "japan": "jp",
             "china": "cn", "brazil": "br"
         }
-        
-        if location:
-            # Simple heuristic: extract the last part of "City, Country"
-            parts = location.split(',')
-            if len(parts) > 1:
-                country_name = parts[-1].strip().lower()
-                # Check known mappings
-                if country_name in country_map:
-                    params["country"] = country_map[country_name]
-                else:
-                    # Fallback to query if no code match
-                    params["q"] = country_name
-        
-        if "country" not in params and "q" not in params:
-            params["category"] = "general" # Worldwide top headlines
 
-        response = requests.get("https://newsapi.org/v2/top-headlines", params=params, timeout=10)
-        data = response.json()
-        
-        articles = data.get("articles", [])
-        news_list = []
-        
-        for a in articles:
-            if a.get("title") and a.get("description") and a.get("url"):
-                news_list.append({
-                    "title": a['title'],
-                    "description": a['description'],
-                    "url": a['url']
-                })
-        
-        return news_list[:5] if news_list else [{"title": "No news", "description": "", "url": ""}]
-        
+        if location:
+            parts = [p.strip() for p in location.split(',')]
+            if len(parts) > 0:
+                city = parts[0]
+            if len(parts) > 1:
+                country_name = parts[-1].lower()
+                country_code = country_map.get(country_name)
+
+        # 2. Strategy: City Specific
+        if city and len(news_list) < max_articles:
+            print(f"         🔎 Searching news for city: {city}")
+            try:
+                params = {
+                    "q": city,
+                    "language": "en",
+                    "sortBy": "publishedAt",
+                    "pageSize": 5,
+                    "apiKey": NEWS_API_KEY
+                }
+                resp = requests.get("https://newsapi.org/v2/everything", params=params, timeout=10)
+                data = resp.json()
+                add_articles(data.get("articles", []))
+            except Exception as e:
+                print(f"         ⚠️ City fetch failed: {e}")
+
+        # 3. Strategy: Country Top Headlines
+        if country_code and len(news_list) < max_articles:
+            print(f"         🔎 Searching news for country: {country_code}")
+            try:
+                params = {
+                    "country": country_code,
+                    "pageSize": 10,  # Fetch more to fill gaps
+                    "apiKey": NEWS_API_KEY
+                }
+                resp = requests.get("https://newsapi.org/v2/top-headlines", params=params, timeout=10)
+                data = resp.json()
+                add_articles(data.get("articles", []))
+            except Exception as e:
+                 print(f"         ⚠️ Country fetch failed: {e}")
+
+        # 4. Strategy: Global Top Headlines (Fallback)
+        if len(news_list) < max_articles:
+            print(f"         🔎 Searching global news")
+            try:
+                params = {
+                    "category": "general",
+                    "language": "en",
+                    "pageSize": 10,
+                    "apiKey": NEWS_API_KEY
+                }
+                resp = requests.get("https://newsapi.org/v2/top-headlines", params=params, timeout=10)
+                data = resp.json()
+                add_articles(data.get("articles", []))
+            except Exception as e:
+                 print(f"         ⚠️ Global fetch failed: {e}")
+
+        # Final check
+        if not news_list:
+            return [{"title": "No specific news today", "description": "Check back tomorrow!", "url": "https://news.google.com"}]
+            
+        return news_list[:max_articles]
+
     except Exception as e:
-        print(f"         ⚠️ News failed: {e}")
-        return [{"title": "No news", "description": "", "url": ""}]
+        print(f"         ❌ News fetch critical error: {e}")
+        return [{"title": "News Unavailable", "description": "Could not fetch news at this time.", "url": "https://news.google.com"}]
 
 # ----------------------------
 # FETCH QUOTE
