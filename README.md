@@ -2,15 +2,12 @@
 
 SmartBrief is a sophisticated automation pipeline that transforms atmospheric data, global news, and philosophical insights into a concise, localized daily briefing. This document provides a granular, block-by-block breakdown of the entire system architecture, logic, and security protocols.
 
-### 🛠 Technology Breakdown
-```mermaid
-pie title Project Tech Stack
-    "Python (Backend)" : 45
-    "HTML/CSS (Design)" : 25
-    "JavaScript (Frontend)" : 15
-    "Google Apps Script" : 10
-    "JSON (Caching)" : 5
-```
+### 🛠 Technology Landscape
+<p align="center">
+  <img src="https://quickchart.io/chart?c={type:'doughnut',data:{labels:['Python','HTML/CSS','JS','Sheets','JSON'],datasets:[{data:[45,25,15,10,5],backgroundColor:['%2300fbff','%23ff00ff','%23ffeb3b','%2300ff00','%237e57c2']}]},options:{plugins:{datalabels:{color:'white',font:{weight:'bold'}}},donutText:{title:'Stack',subtitle:'SmartBrief',colors:{title:'%23ffffff',subtitle:'%2394a3b8'}}}}" width="400" />
+  <br>
+  <a href="dashboard.html"><b>Explore 100% Interactive Dashboard →</b></a>
+</p>
 
 ---
 
@@ -104,7 +101,7 @@ The frontend (`script.js`) uses the browser's native Geolocation API.
 
 ---
 
-## � Code-Level Deep Dives
+## 🔦 Code-Level Deep Dives
 
 ### The News Strategy: "Quality through Redundancy"
 We don't just fetch news; we hunt for it. If a user is in a small town, a simple search might fail. Our fallback logic ensures the "News" section never looks empty:
@@ -155,7 +152,7 @@ This single block of logic saves roughly **90% of API costs** in high-density ar
 
 ---
 
-## �🛠 Setup & Installation
+## ⚙️ Setup & Installation
 
 1.  **Clone the Repository**:
     ```bash
